@@ -23,6 +23,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Wallet } from "lucide-react"
+import { WithdrawalModal } from "@/components/withdrawal-modal"
 
 export default function Home() {
   // State for login streak
@@ -51,6 +52,7 @@ export default function Home() {
   const [exchangeUid, setExchangeUid] = useState("")
   const [uidError, setUidError] = useState("")
   const [isUidBound, setIsUidBound] = useState(false)
+  const [isWithdrawalModalOpen, setIsWithdrawalModalOpen] = useState(false)
 
   const referralLink = "https://bitbee.app/register?ref=Kkwf5b"
 
@@ -110,11 +112,11 @@ export default function Home() {
 
   // Load bound UID on mount
   useEffect(() => {
-    const savedUid = localStorage.getItem("exchangeUid")
-    if (savedUid) {
-      setExchangeUid(savedUid)
-      setIsUidBound(true)
-    }
+    // const savedUid = localStorage.getItem("exchangeUid")
+    // if (savedUid) {
+    //   setExchangeUid(savedUid)
+    //   setIsUidBound(true)
+    // }
   }, [])
 
   // Load saved data on component mount
@@ -354,7 +356,7 @@ export default function Home() {
             size="sm"
             onClick={() => {
               if (isUidBound) {
-                window.open("https://www.zonewallet.io/", "_blank")
+                setIsWithdrawalModalOpen(true)
               } else {
                 setIsWithdrawDialogOpen(true)
               }
@@ -362,7 +364,7 @@ export default function Home() {
             className={`w-full mt-3 border-lion-orange text-lion-orange hover:bg-lion-orange/10 ${isUidBound ? "bg-lion-orange/5" : ""}`}
           >
             {isUidBound ? <Wallet className="h-4 w-4 mr-2" /> : <Wallet className="h-4 w-4 mr-2" />}
-            {isUidBound ? "前往 ZONE Wallet 出金" : "我要提領 / 綁定錢包"}
+            {isUidBound ? "提現 / 出金" : "我要提領 / 綁定錢包"}
           </Button>
         </Card>
 
@@ -413,7 +415,7 @@ export default function Home() {
               variant={todaysClaimed ? "teal" : "orange"}
               className="w-full"
               onClick={claimDailyReward}
-              disabled={todaysClaimed || !isWalletConnected}
+              disabled={todaysClaimed}
             >
               {todaysClaimed ? "已領取今日獎勵" : "點擊領取今日獎勵"}
             </Button>
@@ -500,6 +502,15 @@ export default function Home() {
 
       {/* Bottom Navigation */}
       <BottomNavigation activeTab="home" />
+
+      <WithdrawalModal
+        open={isWithdrawalModalOpen}
+        onOpenChange={setIsWithdrawalModalOpen}
+        balances={{
+          USDT: 0,
+          WBTC: totalRewards // Using the accumulated rewards
+        }}
+      />
 
       {/* Withdrawal / Binding Dialog */}
       <AlertDialog open={isWithdrawDialogOpen} onOpenChange={setIsWithdrawDialogOpen}>

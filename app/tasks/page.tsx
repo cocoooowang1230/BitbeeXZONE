@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, memo } from "react"
 import Script from "next/script"
 import { Button } from "@/components/ui/button"
 import { MessageSquare, ChevronDown, ChevronUp, Check, ExternalLink, ShieldCheck, Gift } from "lucide-react"
@@ -428,18 +428,73 @@ interface ImeiCampaignCardProps {
   onShowPrerequisite?: () => void
 }
 
+const GleamWidget = memo(() => {
+  useEffect(() => {
+    const script = document.createElement('script')
+    script.src = "https://widget.gleamjs.io/e.js"
+    script.async = true
+    script.type = "text/javascript"
+    document.body.appendChild(script)
+
+    return () => {
+      if (document.body.contains(script)) {
+        document.body.removeChild(script)
+      }
+    }
+  }, [])
+
+  return (
+    <div className="mb-4">
+      <a className="e-widget no-button generic-loader" href="https://gleam.io/st1s5/task" rel="nofollow">
+        TASK
+      </a>
+    </div>
+  )
+})
+GleamWidget.displayName = "GleamWidget"
+
 function ImeiCampaignCard({ completedTasks = [], onShowPrerequisite }: ImeiCampaignCardProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const [subTasks, setSubTasks] = useState({
-    share: { status: "idle", url: "", platform: "facebook" }, // idle, pending, completed
-    video: { status: "idle", finished: false },
-    buy: { status: "idle", url: "", platform: "instagram" },
+    share: { status: "idle", url: "", platform: "facebook", currentCount: 1, limit: 3500 }, // idle, pending, completed
+    video: { status: "idle", finished: false, email: "", currentCount: 1, limit: 3500 },
+    buy: { status: "idle", url: "", platform: "instagram", currentCount: 1, limit: 300 },
   })
   const handleResubmit = (type: "share" | "buy") => {
     setSubTasks((prev) => ({
       ...prev,
       [type]: { ...prev[type], status: "idle" },
     }))
+  }
+
+  const handleVideoTaskSubmit = () => {
+    if (subTasks.video.currentCount >= subTasks.video.limit) {
+      toast({
+        title: "任務已結束",
+        description: "本任務已達參與人數上限",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (!subTasks.video.email) {
+      toast({
+        title: "請填寫 Email",
+        description: "您需要填寫 Email 才能領取獎勵",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setSubTasks((prev) => ({
+      ...prev,
+      video: { ...prev.video, status: "completed" },
+    }))
+
+    toast({
+      title: "任務完成!",
+      description: `您獲得了 +${formatCryptoValue(0.00000109)} WBTC`,
+    })
   }
 
   const handleWatchVideo = () => {
@@ -454,6 +509,15 @@ function ImeiCampaignCard({ completedTasks = [], onShowPrerequisite }: ImeiCampa
   // 1 WBTC = 2,850,000 NTD
 
   const handleSubmitShare = (type: "share" | "buy") => {
+    if (subTasks[type].currentCount >= subTasks[type].limit) {
+      toast({
+        title: "任務已結束",
+        description: "本任務已達參與人數上限",
+        variant: "destructive",
+      })
+      return
+    }
+
     // Simulate API call
     setSubTasks((prev) => ({
       ...prev,
@@ -562,6 +626,10 @@ function ImeiCampaignCard({ completedTasks = [], onShowPrerequisite }: ImeiCampa
                 </span>
               </div>
 
+              <div className="mb-3 text-xs text-gray-500 font-mono bg-gray-100 inline-block px-2 py-1 rounded">
+                參與人數：{subTasks.share.currentCount.toString().padStart(4, '0')} / {subTasks.share.limit.toLocaleString()}
+              </div>
+
               {/* Event Banner */}
               <div className="mb-4 rounded-lg overflow-hidden border border-gray-200">
                 <div className="aspect-[3/1] bg-gray-200 w-full flex items-center justify-center text-gray-400">
@@ -656,16 +724,40 @@ function ImeiCampaignCard({ completedTasks = [], onShowPrerequisite }: ImeiCampa
                   +{formatCryptoValue(0.00000109)} WBTC
                 </span>
               </div>
-              <p className="text-sm text-gray-600 mb-3">完整觀看影片即可獲得獎勵。</p>
 
-              <div className="mb-4">
-                <a className="e-widget no-button generic-loader" href="https://gleam.io/st1s5/task" rel="nofollow">
-                  TASK
-                </a>
-                <Script src="https://widget.gleamjs.io/e.js" async />
+              <div className="mb-3 text-xs text-gray-500 font-mono bg-gray-100 inline-block px-2 py-1 rounded">
+                參與人數：{subTasks.video.currentCount.toString().padStart(4, '0')} / {subTasks.video.limit.toLocaleString()}
               </div>
+              <p className="text-sm text-gray-600 mb-3">完整觀看影片並填寫 Email 即可獲得獎勵。</p>
 
+              <GleamWidget />
 
+              {subTasks.video.status === "idle" ? (
+                <div className="space-y-3">
+                  <Input
+                    placeholder="請輸入您的 Email 以領取獎勵"
+                    value={subTasks.video.email || ""}
+                    onChange={(e) =>
+                      setSubTasks((prev) => ({ ...prev, video: { ...prev.video, email: e.target.value } }))
+                    }
+                  />
+                  <Button
+                    size="sm"
+                    className="w-full bg-red-600 hover:bg-red-700 text-white"
+                    onClick={handleVideoTaskSubmit}
+                    disabled={!subTasks.video.email}
+                  >
+                    領取獎勵
+                  </Button>
+                </div>
+              ) : (
+                <div className="bg-green-50 text-green-800 text-sm p-3 rounded-lg border border-green-200">
+                  <div className="flex items-center gap-2">
+                    <Check className="h-4 w-4" />
+                    <span className="font-medium">任務已完成！</span>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Task 3: Buy & Photo */}
@@ -676,6 +768,10 @@ function ImeiCampaignCard({ completedTasks = [], onShowPrerequisite }: ImeiCampa
                 <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">
                   +{formatCryptoValue(0.00000549)} WBTC
                 </span>
+              </div>
+
+              <div className="mb-3 text-xs text-gray-500 font-mono bg-gray-100 inline-block px-2 py-1 rounded">
+                參與人數：{subTasks.buy.currentCount.toString().padStart(3, '0')} / {subTasks.buy.limit.toLocaleString()}
               </div>
               <p className="text-sm text-gray-600 mb-3">購買義美商品合照並公開分享，回填貼文網址。</p>
 
