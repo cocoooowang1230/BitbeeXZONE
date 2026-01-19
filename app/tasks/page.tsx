@@ -3,7 +3,7 @@
 import type React from "react"
 import { useState, useEffect, memo } from "react"
 import { Button } from "@/components/ui/button"
-import { MessageSquare, ChevronDown, ChevronUp, Check, ExternalLink, ShieldCheck } from "lucide-react"
+import { MessageSquare, ChevronDown, ChevronUp, Check, ExternalLink, ShieldCheck, Wallet } from "lucide-react"
 import { BottomNavigation } from "@/components/bottom-navigation"
 import { LionLogo } from "@/components/lion-logo"
 import { toast } from "@/components/ui/use-toast"
@@ -122,6 +122,11 @@ export default function TasksPage() {
       <div className="flex-1 container max-w-md mx-auto px-4 pt-4 space-y-4 pb-4">
         {/* Task Cards */}
         <div className="space-y-4">
+          <ZoneWalletGuideTask
+            completedTasks={completedTasks}
+            onShowPrerequisite={() => setShowPrerequisiteDialog(true)}
+          />
+
           <TaskCard
             id="identity"
             icon={<ShieldCheck className="h-5 w-5 text-white" />}
@@ -433,7 +438,7 @@ function TaskCard({
   )
 }
 
-const GleamWidget = memo(() => {
+const GleamWidget = memo(({ href, title = "TASK" }: { href: string; title?: string }) => {
   useEffect(() => {
     const script = document.createElement('script')
     script.src = "https://widget.gleamjs.io/e.js"
@@ -446,12 +451,12 @@ const GleamWidget = memo(() => {
         document.body.removeChild(script)
       }
     }
-  }, [])
+  }, [href])
 
   return (
     <div className="mb-4 w-full overflow-hidden" style={{ minHeight: '400px' }}>
-      <a className="e-widget no-button generic-loader" href="https://gleam.io/st1s5/task" rel="nofollow">
-        TASK
+      <a className="e-widget no-button generic-loader" href={href} rel="nofollow">
+        {title}
       </a>
     </div>
   )
@@ -681,7 +686,7 @@ function ImeiVideoTask({ completedTasks, onShowPrerequisite }: ImeiTaskProps) {
         <div className="px-4 pb-4 pt-0">
           <div className="border-t border-gray-100 pt-3 space-y-4">
             <p className="text-sm text-gray-600 mb-3">完整觀看影片並填寫 Email 即可獲得獎勵。</p>
-            <GleamWidget />
+            <GleamWidget href="https://gleam.io/st1s5/task" />
             <div className="space-y-3">
               <Input
                 placeholder="請輸入您的 Email 以領取獎勵"
@@ -805,6 +810,52 @@ function ImeiBuyTask({ completedTasks, onShowPrerequisite }: ImeiTaskProps) {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ZoneWalletGuideTask({ completedTasks, onShowPrerequisite }: ImeiTaskProps) {
+  const [isExpanded, setIsExpanded] = useState(false)
+  const isCompleted = completedTasks.includes("zone_guide")
+
+  return (
+    <div className={`bg-white rounded-xl border transition-all duration-200 overflow-hidden ${isCompleted ? "border-green-300 bg-green-50" : isExpanded ? "border-lion-orange shadow-lion" : "border-lion-face-dark shadow-sm hover:shadow-lion"}`}>
+      <div
+        className="flex items-start p-4 cursor-pointer"
+        onClick={() => {
+          if (!completedTasks.includes("identity")) {
+            onShowPrerequisite()
+            return
+          }
+          setIsExpanded(!isExpanded)
+        }}
+      >
+        <div className={`p-3 rounded-full mr-3 shadow-sm ${isCompleted ? "bg-green-500" : "bg-blue-600"}`}>
+          {isCompleted ? <Check className="h-5 w-5 text-white" /> : <Wallet className="h-5 w-5 text-white" />}
+        </div>
+        <div className="flex-1">
+          <h3 className="font-bold text-lion-accent">ZONE wallet 新手必看</h3>
+          <p className="text-sm text-gray-600">錢包連接與 UID 綁定教學</p>
+        </div>
+        <div className="flex flex-col items-end">
+          <div className="bg-lion-face px-3 py-1 rounded-full text-lion-orange font-medium text-sm border border-lion-face-dark mb-1">
+            +5 USDT
+          </div>
+          {!isCompleted && <div className="text-gray-400">{isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}</div>}
+        </div>
+      </div>
+
+      {isExpanded && !isCompleted && (
+        <div className="px-4 pb-4 pt-0">
+          <div className="border-t border-gray-100 pt-3 space-y-4">
+            <p className="text-sm text-gray-600 mb-3">請完成以下教學任務以了解如何連接錢包並獲得獎勵。</p>
+            <GleamWidget
+              href="https://gleam.io/UQT8z/uid"
+              title="新手必看：錢包連接與 UID 綁定教學"
+            />
           </div>
         </div>
       )}

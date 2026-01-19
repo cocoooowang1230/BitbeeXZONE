@@ -17,13 +17,14 @@ import { AlertCircle, ArrowRight, Check } from "lucide-react"
 interface WithdrawalModalProps {
     open: boolean
     onOpenChange: (open: boolean) => void
+    uid: string
     balances: {
         USDT: number
         WBTC: number
     }
 }
 
-export function WithdrawalModal({ open, onOpenChange, balances }: WithdrawalModalProps) {
+export function WithdrawalModal({ open, onOpenChange, uid, balances }: WithdrawalModalProps) {
     const [currency, setCurrency] = useState<"USDT" | "WBTC">("USDT")
     const [amount, setAmount] = useState("")
     const [targetCurrency, setTargetCurrency] = useState<"TWD" | "Other">("TWD")
@@ -113,8 +114,11 @@ export function WithdrawalModal({ open, onOpenChange, balances }: WithdrawalModa
     }
 
     const handleFinalConfirm = () => {
-        // Simulate API call
+        // Simulate API call: ZOO sends UID, Currency, Amount to ZONE
+        console.log(`Sending withdrawal request: UID=${uid}, Currency=${currency}, Amount=${amount}`)
+
         setTimeout(() => {
+            // Mock backend response: Success
             setSuccess(true)
             setShowConfirm(false)
         }, 1000)

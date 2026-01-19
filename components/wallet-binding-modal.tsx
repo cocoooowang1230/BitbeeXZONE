@@ -1,6 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import Image from "next/image"
+import Link from "next/link"
 import {
     AlertDialog,
     AlertDialogContent,
@@ -34,12 +36,7 @@ export function WalletBindingModal({
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState("")
     const [countdown, setCountdown] = useState(0)
-
-    // Mock user info for Step 2
-    const mockUserInfo = {
-        phone: "09xxxxx845",
-        email: "aaron.huxx@gmail.com",
-    }
+    const [userInfo, setUserInfo] = useState<{ phone: string, email: string } | null>(null)
 
     // Reset state when opening
     useEffect(() => {
@@ -49,6 +46,7 @@ export function WalletBindingModal({
             setOtp("")
             setError("")
             setCountdown(0)
+            setUserInfo(null)
         }
     }, [open])
 
@@ -61,7 +59,7 @@ export function WalletBindingModal({
         return () => clearTimeout(timer)
     }, [countdown])
 
-    // Step 1: Validate UID
+    // Step 1: Query User Masked Info (ZOO -> ZONE)
     const handleStep1Submit = () => {
         if (!uid) {
             setError("請輸入 UID")
@@ -71,14 +69,27 @@ export function WalletBindingModal({
             setError("UID 格式錯誤")
             return
         }
+
+        setIsLoading(true)
         setError("")
-        setStep(2)
+
+        // Simulate API: ZOO sends UID to ZONE, ZONE returns masked info
+        setTimeout(() => {
+            setIsLoading(false)
+            // Mock response
+            setUserInfo({
+                phone: "09xxxxx845",
+                email: "aaron.huxx@gmail.com",
+            })
+            setStep(2)
+        }, 1000)
     }
 
-    // Step 2: Confirm Info and Send OTP
+    // Step 2: Trigger SMS (ZOO calls API -> ZONE sends SMS)
     const handleStep2Submit = () => {
         setIsLoading(true)
-        // Simulate API call
+
+        // Simulate API: Notify ZONE to send SMS
         setTimeout(() => {
             setIsLoading(false)
             setCountdown(60)
@@ -86,7 +97,7 @@ export function WalletBindingModal({
         }, 1000)
     }
 
-    // Step 3: Verify OTP
+    // Step 3: Verify and Bind (User enters code -> ZOO sends Code+UID to ZONE -> ZONE verifies -> Bind)
     const handleStep3Submit = () => {
         if (otp.length !== 6) {
             setError("驗證碼應為 6 位數")
@@ -96,14 +107,11 @@ export function WalletBindingModal({
         setIsLoading(true)
         setError("")
 
-        // Simulate verification
+        // Simulate API: Verify Code and Bind
         setTimeout(() => {
             setIsLoading(false)
-            if (otp === "123456") { // Test code
-                handleSuccess()
-            } else {
-                // For demo purposes, let's treat any 6-digit code as success unless specific
-                // But user asked for error cases. let's just succeed for now to unblock
+            // Mock success
+            if (otp) {
                 handleSuccess()
             }
         }, 1500)
@@ -137,29 +145,61 @@ export function WalletBindingModal({
                             </AlertDialogDescription>
                         </AlertDialogHeader>
 
-                        <div className="py-6 px-2">
-                            <Input
-                                placeholder="請輸入 UID"
-                                value={uid}
-                                onChange={(e) => {
-                                    setUid(e.target.value)
-                                    setError("")
-                                }}
-                                className="text-center text-lg h-12 border-gray-200 bg-gray-50 focus:bg-white transition-all rounded-xl"
-                            />
+                        <div className="py-4 px-2 space-y-4">
+                            {/* Tutorial Banner */}
+                            <Link
+                                href="/tasks"
+                                onClick={() => onOpenChange(false)}
+                                className="block overflow-hidden rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow active:scale-95 duration-200"
+                            >
+                                <div className="relative aspect-[16/7] w-full">
+                                    <Image
+                                        src="/images/zone_wallet_banner.png"
+                                        alt="ZONE Wallet 教學"
+                                        fill
+                                        className="object-cover"
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-3">
+                                        <p className="text-white text-xs font-bold flex items-center gap-1">
+                                            <span>👉 還沒有 UID？先看綁定教學</span>
+                                            <span className="bg-lion-orange px-1.5 py-0.5 rounded text-[10px]">去領獎勵</span>
+                                        </p>
+                                    </div>
+                                </div>
+                            </Link>
+
+                            <div className="space-y-2">
+                                <p className="text-sm font-medium text-gray-700 ml-1">請輸入你的 ZONE UID</p>
+                                <Input
+                                    placeholder="請輸入 UID"
+                                    value={uid}
+                                    onChange={(e) => {
+                                        setUid(e.target.value)
+                                        setError("")
+                                    }}
+                                    className="text-center text-lg h-12 border-gray-200 bg-gray-50 focus:bg-white transition-all rounded-xl"
+                                />
+                            </div>
                             {error && (
-                                <p className="text-red-500 text-sm mt-2 text-center flex items-center justify-center gap-1">
+                                <p className="text-red-500 text-sm mt-1 text-center flex items-center justify-center gap-1">
                                     <AlertCircle className="w-4 h-4" /> {error}
                                 </p>
                             )}
                         </div>
 
-                        <AlertDialogFooter>
+                        <AlertDialogFooter className="flex-col gap-2 sm:flex-col">
                             <Button
                                 className="w-full bg-black hover:bg-gray-800 text-white rounded-xl h-11 font-medium text-base shadow-lg shadow-gray-200"
                                 onClick={handleStep1Submit}
                             >
                                 下一步
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                className="w-full text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-xl"
+                                onClick={() => onOpenChange(false)}
+                            >
+                                取消
                             </Button>
                         </AlertDialogFooter>
                     </>
@@ -182,7 +222,7 @@ export function WalletBindingModal({
                                     </div>
                                     <div>
                                         <p className="text-xs text-gray-500 font-medium">手機</p>
-                                        <p className="text-gray-900 font-semibold">{mockUserInfo.phone}</p>
+                                        <p className="text-gray-900 font-semibold">{userInfo?.phone}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3">
@@ -191,7 +231,7 @@ export function WalletBindingModal({
                                     </div>
                                     <div>
                                         <p className="text-xs text-gray-500 font-medium">Email</p>
-                                        <p className="text-gray-900 font-semibold">{mockUserInfo.email}</p>
+                                        <p className="text-gray-900 font-semibold">{userInfo?.email}</p>
                                     </div>
                                 </div>
                             </div>

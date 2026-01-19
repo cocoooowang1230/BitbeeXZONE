@@ -30,7 +30,7 @@ export default function Home() {
   // State for login streak
   const [loginStreak, setLoginStreak] = useState({
     currentDay: 0,
-    lastClaimed: null,
+    lastClaimed: null as string | null,
     days: [
       { reward: "+1", completed: false },
       { reward: "+1", completed: false },
@@ -61,11 +61,11 @@ export default function Home() {
 
   // Load bound UID on mount
   useEffect(() => {
-    // const savedUid = localStorage.getItem("exchangeUid")
-    // if (savedUid) {
-    //   setExchangeUid(savedUid)
-    //   setIsUidBound(true)
-    // }
+    const savedUid = localStorage.getItem("exchangeUid")
+    if (savedUid) {
+      setExchangeUid(savedUid)
+      setIsUidBound(true)
+    }
   }, [])
 
   // Load saved data on component mount
@@ -116,7 +116,8 @@ export default function Home() {
     newStreak.days[currentDay].completed = true
 
     // Add reward
-    const rewardAmount = Number.parseFloat(newStreak.days[currentDay].reward.match(/\d+(\.\d+)?/)[0])
+    const rewardMatch = newStreak.days[currentDay].reward.match(/\d+(\.\d+)?/)
+    const rewardAmount = rewardMatch ? Number.parseFloat(rewardMatch[0]) : 0
     const newTotalRewards = totalRewards + rewardAmount
     setTotalRewards(newTotalRewards)
 
@@ -208,7 +209,7 @@ export default function Home() {
         // Fallback to copy if share API not available
         await copyReferralLink()
       }
-    } catch (err) {
+    } catch (err: any) {
       if (err.name !== "AbortError") {
         toast({
           title: "分享失敗",
@@ -239,12 +240,23 @@ export default function Home() {
   return (
     <div className="flex flex-col min-h-screen bg-lion-face-light pb-16">
       {/* Header */}
-      <header className="bg-gradient-to-r from-lion-orange to-lion-red text-white p-4 text-center shadow-md">
+      <header className="bg-gradient-to-r from-lion-orange to-lion-red text-white p-4 text-center shadow-md relative">
         <div className="flex items-center justify-center gap-2">
           <LionLogo size="sm" />
           <h1 className="text-2xl font-bold">BitBee</h1>
         </div>
         <p className="mt-1 text-sm">完成任務獲取獎勵</p>
+
+        {/* Debug Reset Button */}
+        <button
+          onClick={() => {
+            localStorage.clear();
+            window.location.reload();
+          }}
+          className="absolute right-2 top-2 bg-white/20 hover:bg-white/30 text-[10px] px-2 py-1 rounded border border-white/40 transition-colors"
+        >
+          🔧 重置測試
+        </button>
       </header>
 
       <main className="flex-1 container max-w-md mx-auto p-4 space-y-4">
@@ -304,7 +316,11 @@ export default function Home() {
             variant="outline"
             size="sm"
             onClick={() => {
-              setIsWithdrawalModalOpen(true)
+              if (isUidBound) {
+                setIsWithdrawalModalOpen(true)
+              } else {
+                setIsWithdrawDialogOpen(true)
+              }
             }}
             className={`w-full mt-3 border-lion-orange text-lion-orange hover:bg-lion-orange/10 bg-lion-orange/5`}
           >
@@ -451,6 +467,7 @@ export default function Home() {
       <WithdrawalModal
         open={isWithdrawalModalOpen}
         onOpenChange={setIsWithdrawalModalOpen}
+        uid={exchangeUid}
         balances={{
           USDT: 0,
           WBTC: totalRewards // Using the accumulated rewards
